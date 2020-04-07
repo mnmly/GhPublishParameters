@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+  <PropertyGroup>
+    <TargetFramework>net47</TargetFramework>
+    <RootNamespace>GhPublishParameters</RootNamespace>
+    <Version>1.0</Version>
+    <Title>GhPublishParameters</Title>
+    <Description>Description of GhPublishParameters</Description>
+    <ReleaseVersion>1.0.1</ReleaseVersion>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="4.7.1" />
+    <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="GH_IO">
+      <HintPath>..\..\..\..\..\..\Applications\RhinoWIP.app\Contents\Frameworks\RhCore.framework\Versions\A\Resources\ManagedPlugIns\GrasshopperPlugin.rhp\GH_IO.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Grasshopper">
+      <HintPath>..\..\..\..\..\..\Applications\RhinoWIP.app\Contents\Frameworks\RhCore.framework\Versions\A\Resources\ManagedPlugIns\GrasshopperPlugin.rhp\Grasshopper.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RhinoCommon">
+      <HintPath>..\..\..\..\..\..\Applications\RhinoWIP.app\Contents\Frameworks\RhCore.framework\Versions\A\Resources\RhinoCommon.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
