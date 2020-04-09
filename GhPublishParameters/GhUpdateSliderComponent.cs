@@ -3,20 +3,24 @@ using System.Collections.Generic;
 
 using Grasshopper;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Special;
 using Rhino.Geometry;
-using WebSocketSharp;
 using System.Text.Json;
 using System.Text;
+using MNML;
 
-namespace MNML
+namespace GhPublishParameters
 {
-    // @TODO may deprecate in favour of WebsocketReceive component.
 
-    public class GhReceiveParameterComponent : GH_Component
+    public class UpdateMessage
     {
-        
-        string latestMessage = null;
-        WebSocket lastSocket = null;
+        public string guid { get; set; }
+        public float value { get; set; }
+    }
+
+
+    public class GhUpdateSliderComponent : GH_Component
+    {
         /// <summary>
         /// Each implementation of GH_Component must provide a public 
         /// constructor without any arguments.
@@ -24,9 +28,9 @@ namespace MNML
         /// Subcategory the panel. If you use non-existing tab or panel names, 
         /// new tabs/panels will automatically be created.
         /// </summary>
-        public GhReceiveParameterComponent()
-          : base("Receive Update", "Receive Update",
-            "Receive updates from GUI",
+        public GhUpdateSliderComponent()
+          : base("Update Slider Value", "UpdateSlider",
+            "GhUpdateSliderComponent description",
             "MNML", "Communication")
         {
         }
@@ -36,8 +40,7 @@ namespace MNML
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Socket", "S", "Socket to receive events", GH_ParamAccess.item);
-
+            pManager.AddTextParameter("JSON", "J", "JSON Object containing the change", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -54,52 +57,28 @@ namespace MNML
         /// to store data in output parameters.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            WebSocket socket = null;
-            if (!DA.GetData(0, ref socket)) return;
-            lastSocket = socket;
-            lastSocket.OnMessage -= Socket_OnMessage;
-            lastSocket.OnMessage += Socket_OnMessage;
-        }
+            string jsonString = null;
+            if (!DA.GetData(0, ref jsonString)) return;
 
-
-        private void ScheduleCallback(GH_Document document)
-        {
-
-            if (latestMessage == null) return;
-
-            var data = JsonSerializer.Deserialize<UpdateMessage>(latestMessage);
+            var data = JsonSerializer.Deserialize<UpdateMessage>(jsonString);
             var doc = OnPingDocument();
             var guid = new Guid(data.guid);
-            AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, latestMessage);
+            GH_NumberSlider sliderToExpire = null;
 
             foreach (IGH_DocumentObject docObject in doc.Objects)
             {
                 if (guid == docObject.InstanceGuid)
                 {
-                    var slider = docObject as Grasshopper.Kernel.Special.GH_NumberSlider;
-                    slider.SetSliderValue((decimal)data.value);
-                    slider.ExpireSolution(false);
+                    sliderToExpire = docObject as GH_NumberSlider;
                     break;
                 }
             }
-
-            latestMessage = null;
-
-            //ExpireSolution(false);
-        }
-
-
-        class UpdateMessage
-        {
-            public string guid { get; set; }
-            public float value { get; set; }
-        }
-
-
-        private void Socket_OnMessage(object sender, MessageEventArgs e)
-        {
-            latestMessage = e.Data;
-            OnPingDocument().ScheduleSolution(5, ScheduleCallback);
+            doc.ScheduleSolution(5, (GH_Document _doc) =>
+            {
+                sliderToExpire.SetSliderValue((decimal)data.value);
+                sliderToExpire.ExpireSolution(false);
+            });
+           
         }
 
         /// <summary>
@@ -123,7 +102,7 @@ namespace MNML
         /// </summary>
         public override Guid ComponentGuid
         {
-            get { return new Guid("4126b380-ebca-49dc-aa4b-adde4f9bfe69"); }
+            get { return new Guid("4c607bd7-f498-4949-916a-9410b1b5cbbb"); }
         }
     }
 }
