@@ -8,6 +8,7 @@ using Rhino.Geometry;
 using System.Text.Json;
 using System.Text;
 using MNML;
+using System.Timers;
 
 namespace GhPublishParameters
 {
@@ -28,6 +29,11 @@ namespace GhPublishParameters
         /// Subcategory the panel. If you use non-existing tab or panel names, 
         /// new tabs/panels will automatically be created.
         /// </summary>
+        ///
+        Timer timer = null;
+        bool isUpdating = false;
+        string prevJSONString = null;
+
         public GhUpdateSliderComponent()
           : base("Update Slider Value", "UpdateSlider",
             "GhUpdateSliderComponent description",
@@ -48,6 +54,7 @@ namespace GhPublishParameters
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
+            pManager.AddBooleanParameter("Updated", "U", "Flag to indicate the slider updates", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -58,8 +65,16 @@ namespace GhPublishParameters
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             string jsonString = null;
+            bool prevIsUpdating = isUpdating;
+
             if (!DA.GetData(0, ref jsonString)) return;
 
+            if (prevJSONString == jsonString)
+            {
+                DA.SetData(0, isUpdating);
+                return;
+            }
+            prevJSONString = jsonString;
             var data = JsonSerializer.Deserialize<UpdateMessage>(jsonString);
             var doc = OnPingDocument();
             var guid = new Guid(data.guid);
@@ -73,12 +88,41 @@ namespace GhPublishParameters
                     break;
                 }
             }
-            doc.ScheduleSolution(5, (GH_Document _doc) =>
+
+            if (sliderToExpire != null)
             {
-                sliderToExpire.SetSliderValue((decimal)data.value);
-                sliderToExpire.ExpireSolution(false);
+                isUpdating = true;
+                doc.ScheduleSolution(5, (GH_Document _doc) =>
+                {
+                    sliderToExpire.SetSliderValue((decimal)data.value);
+                    sliderToExpire.ExpireSolution(false);
+                });
+
+
+                if (timer != null)
+                {
+                    timer.Stop();
+                    timer.Elapsed -= Timer_Elapsed;
+                    timer.Dispose();
+                }
+
+                timer = new Timer() { Interval = 300 };
+                timer.AutoReset = false;
+                timer.Elapsed += Timer_Elapsed;
+                timer.Start();
+            }
+
+            DA.SetData(0, isUpdating);
+
+        }
+
+        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            OnPingDocument()?.ScheduleSolution(5, (GH_Document _doc) =>
+            {
+                isUpdating = false;
+                ExpireSolution(false);
             });
-           
         }
 
         /// <summary>

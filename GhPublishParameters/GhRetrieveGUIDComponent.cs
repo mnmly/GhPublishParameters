@@ -91,6 +91,7 @@ namespace MNML
                             if (source is GH_NumberSlider)
                             {
                                 var slider = source as GH_NumberSlider;
+                                
                                 var min = slider.Slider.Minimum;
                                 var max = slider.Slider.Maximum;
                                 var step = slider.Slider.SnapDistance;
@@ -115,8 +116,11 @@ namespace MNML
                 string json = Encoding.UTF8.GetString(stream.ToArray());
                 DA.SetData(1, json);
             }
-            
-            DA.SetDataList(0, guidList);
+
+            if (!Hidden)
+            {
+                DA.SetDataList(0, guidList);
+            }
         }
 
         public bool CanInsertParameter(GH_ParameterSide side, int index)
